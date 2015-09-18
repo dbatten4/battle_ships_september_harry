@@ -10,6 +10,7 @@ class BattleshipWeb < Sinatra::Base
   enable :sessions
 
   $board = Board.new(Cell)
+  $board_comp = Board.new(Cell)
 
   set :views, proc { File.join(root, '..', 'views')}
 
@@ -51,6 +52,7 @@ class BattleshipWeb < Sinatra::Base
   get '/ship_placement' do
 
     @name = session[:name]
+    @error = session[:error_message]
 
     if params[:position] == nil then
       #initialise ships
@@ -64,8 +66,12 @@ class BattleshipWeb < Sinatra::Base
     else
       @fleet = session[:fleet]
       ship = Ship.send(params[:type].to_sym)
-      $board.place(ship, params[:position].to_sym, params[:orientation].to_sym)
-      session[:fleet].delete_if{ |item| item[0] == params[:type].to_sym}
+      begin
+        $board.place(ship, params[:position].to_sym, params[:orientation].to_sym)
+        session[:fleet].delete_if{ |item| item[0] == params[:type].to_sym}
+      rescue
+        session[:error_message] = "There is an error"
+      end
     end
 
     @show_board = $board.show_board(Printer)
@@ -73,6 +79,12 @@ class BattleshipWeb < Sinatra::Base
     erb :ship_placement
 
   end
+
+    get '/game' do
+      @show_my_board = $board.show_board(Printer)
+      @show_comp_board = $board_comp.show_board(Printer) 
+      erb :game
+    end
 
     # if session[:board] != nil
     #   puts "IT IS NOT SAVED!!!!"
